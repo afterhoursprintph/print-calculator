@@ -152,7 +152,7 @@
 
       <div id="qrAccordion" class="qr-instructions" style="display: none;">
         <div>Please send payment to GCash/Maya number: <strong>09XX-XXX-XXXX</strong></div>
-        <div class="qr-placeholder">QR CODE HERE</div>
+        <div class="qr-placeholder"><img src="qr-code.png" alt="GCash/Maya QR Code" style="width: 180px; height: auto; border-radius: 8px; margin: 12px auto; display: block; border: 2px solid #fff;"></div>
         <small style="color: var(--text-muted);">Include receipt total in reference note</small>
       </div>
     </div>
@@ -219,7 +219,7 @@
 <script>
   // SUPABASE CLOUD SETUP
   const SUPABASE_URL = 'https://rqzvjnhjeqnfpsiemcwh.supabase.co';
-  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxenZqbmhqZXFuZnBzaWVtY3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3Mjc0MTcsImV4cCI6MjEwNzMwMzQxN30.Qpg19alABUF3sJ76PPlVjonVQ7Kf7YhHGm8yUonUHsQ';
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // FIXED WHOLE-PESO RATES
