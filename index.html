@@ -3,87 +3,183 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Epson L120 Print Estimator</title>
-  <!-- PDF.js for rendering and analyzing PDF pages -->
+  <title>AfterHours Print PH - Digital Print Queue & Pricing Engine</title>
+  <!-- PDF.js for PDF rendering & page analysis -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-  <!-- Supabase JS Client for storage uploads -->
+  <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; }
-    .container { max-width: 650px; margin: auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-    h2, h3 { color: #1a1a1a; margin-top: 0; }
-    
-    /* Control Panel */
-    .admin-panel { background: #eef4ff; border: 1px solid #b6d4fe; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-    .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
-    label { font-size: 0.8rem; font-weight: bold; color: #444; }
-    input[type="number"], select { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-    
-    /* File Drop Zone */
-    .upload-box { border: 2px dashed #0066cc; padding: 25px; text-align: center; border-radius: 8px; background: #f8fa2; margin-top: 15px; }
-    .status { font-weight: bold; color: #0066cc; margin-top: 10px; }
-    .error { color: #d9534f; font-weight: bold; margin-top: 10px; }
+  <!-- html2canvas for downloadable receipt PNG -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-    /* Receipt Card */
-    .receipt-container { background: #fff; border: 2px dashed #222; padding: 24px; font-family: 'Courier New', Courier, monospace; margin-top: 25px; border-radius: 6px; }
-    .receipt-header { text-align: center; border-bottom: 2px solid #222; padding-bottom: 12px; margin-bottom: 16px; }
-    .receipt-header h3 { margin: 0; font-size: 1.1rem; letter-spacing: 1px; }
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --accent-blue: #38bdf8;
+      --accent-hover: #0284c7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+      --success: #22c55e;
+      --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-main); margin: 0; padding: 20px; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 750px; }
+    
+    header { text-align: center; margin-bottom: 25px; }
+    header h1 { margin: 0; font-size: 2.2rem; color: #fff; letter-spacing: -0.5px; }
+    header h1 span { color: var(--accent-blue); }
+    header p { color: var(--text-muted); margin-top: 6px; font-size: 0.95rem; }
+
+    .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); }
+    .card-title { font-size: 1.15rem; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: #fff; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    label { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
+    select, input[type="text"] { width: 100%; background: #0f172a; border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 8px; font-size: 0.95rem; outline: none; }
+    select:focus { border-color: var(--accent-blue); }
+
+    /* Payment Methods UI */
+    .payment-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+    .pay-btn { background: #0f172a; border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; color: var(--text-main); cursor: pointer; text-align: center; font-weight: 600; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .pay-btn:hover { border-color: var(--accent-blue); }
+    .pay-btn.active { background: rgba(56, 189, 248, 0.15); border-color: var(--accent-blue); color: var(--accent-blue); }
+
+    .qr-instructions { background: #0f172a; border: 1px dashed var(--accent-blue); border-radius: 8px; padding: 16px; margin-top: 12px; text-align: center; font-size: 0.88rem; }
+    .qr-placeholder { width: 130px; height: 130px; background: #fff; margin: 10px auto; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold; font-size: 0.75rem; }
+
+    /* Upload Box */
+    .upload-zone { border: 2px dashed var(--border-color); border-radius: 12px; padding: 30px; text-align: center; background: rgba(15, 23, 42, 0.5); cursor: pointer; transition: all 0.2s ease; }
+    .upload-zone:hover { border-color: var(--accent-blue); background: rgba(56, 189, 248, 0.05); }
+    .upload-icon { font-size: 2.2rem; margin-bottom: 8px; color: var(--accent-blue); }
+
+    /* File List Queue */
+    .file-queue { margin-top: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .file-item { background: #0f172a; border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .file-info { display: flex; flex-direction: column; gap: 2px; }
+    .file-name { font-weight: 600; font-size: 0.95rem; color: #fff; }
+    .file-meta { font-size: 0.8rem; color: var(--text-muted); }
+    
+    .counter-group { display: flex; align-items: center; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; }
+    .counter-btn { background: transparent; border: none; color: var(--text-main); width: 32px; height: 32px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+    .counter-btn:hover { background: var(--border-color); }
+    .counter-value { width: 32px; text-align: center; font-size: 0.9rem; font-weight: 600; }
+
+    .btn-delete { background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: var(--danger); border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 0.85rem; }
+    .btn-delete:hover { background: var(--danger); color: #fff; }
+
+    /* Itemized Receipt Area */
+    .receipt-wrapper { background: #ffffff; color: #000000; border-radius: 8px; padding: 25px; font-family: 'Courier New', Courier, monospace; box-shadow: 0 4px 20px rgba(0,0,0,0.5); margin-top: 25px; }
+    .receipt-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px; }
+    .receipt-header h2 { margin: 0; font-size: 1.3rem; letter-spacing: 1px; color: #000; font-weight: 800; }
+    .receipt-header p { margin: 4px 0 0 0; font-size: 0.82rem; color: #333; }
+
     .receipt-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-    .receipt-table th { text-align: left; border-bottom: 2px solid #222; padding-bottom: 8px; font-size: 0.85rem; }
-    .receipt-table td { padding: 10px 0; border-bottom: 1px dashed #ccc; vertical-align: top; font-size: 0.9rem; }
-    .paper-tag { background: #222; color: #fff; padding: 2px 6px; font-weight: bold; border-radius: 3px; font-size: 0.75rem; }
-    .receipt-footer { border-top: 2px solid #222; padding-top: 12px; display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: bold; }
-    .total-price { color: #000; text-decoration: underline; }
+    .receipt-table th { text-align: left; border-bottom: 2px solid #000; padding-bottom: 6px; font-size: 0.8rem; font-weight: bold; }
+    .receipt-table td { padding: 8px 0; border-bottom: 1px dashed #ccc; vertical-align: top; font-size: 0.85rem; color: #000; }
+
+    /* CANVAS-FRIENDLY BADGE STYLING (FIXES CLIPPING) */
+    .paper-tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #111111;
+      color: #ffffff !important;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+      font-size: 0.75rem;
+      line-height: 1;
+      text-align: center;
+      box-sizing: border-box;
+      min-width: 48px;
+    }
+
+    .file-heading { font-weight: bold; background: #f1f5f9; padding: 6px; border-radius: 4px; font-size: 0.85rem; color: #000; }
+    .receipt-summary { border-top: 2px solid #000; padding-top: 12px; font-size: 0.85rem; }
+    .summary-line { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .summary-line.total { border-top: 2px solid #000; padding-top: 8px; font-size: 1.15rem; font-weight: 800; margin-top: 8px; }
+
+    .receipt-footer { text-align: center; border-top: 1px dashed #000; margin-top: 16px; padding-top: 12px; font-size: 0.8rem; font-weight: bold; }
+
+    .btn-download { width: 100%; background: var(--success); color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 15px; transition: opacity 0.2s; }
+    .btn-download:hover { opacity: 0.9; }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>Print Shop Estimator</h2>
+  <header>
+    <h1>AfterHours <span>Print PH</span></h1>
+    <p>Digital Print Queue & Automated Pricing Engine</p>
+  </header>
 
-  <!-- OPERATOR CONFIGURATION PANEL -->
-  <div class="admin-panel">
-    <h3>⚙️ Base Settings & Paper Options</h3>
-    <div class="admin-grid">
+  <!-- CONFIGURATION PANEL -->
+  <div class="card">
+    <div class="card-title">⚙️ 1. Order Configurations</div>
+    
+    <div class="grid-2">
       <div>
-        <label>Paper Selection:</label>
-        <select id="paperType">
-          <option value="SHORT">Short (Letter)</option>
-          <option value="A4" selected>A4 Size</option>
-          <option value="LONG">Long (Legal)</option>
+        <label for="paperSizeSelect">Paper Size Preset:</label>
+        <select id="paperSizeSelect" onchange="recalculateAll()">
+          <option value="AUTO" selected>⚡ Auto-Detect per Page</option>
+          <option value="SHORT">Short (Letter 8.5" x 11")</option>
+          <option value="A4">A4 Size (8.27" x 11.69")</option>
+          <option value="LONG">Long (Legal/Folio 8.5" x 13")</option>
         </select>
       </div>
+
       <div>
-        <label>B&W Rate (₱):</label>
-        <input type="number" id="rateBW" value="2">
+        <label for="printModeSelect">Print Color Mode:</label>
+        <select id="printModeSelect" onchange="recalculateAll()">
+          <option value="COLOR" selected>🌈 Colored</option>
+          <option value="BW">📄 B&W</option>
+        </select>
       </div>
-      <div>
-        <label>Light Rate (₱):</label>
-        <input type="number" id="rateLight" value="4">
+    </div>
+
+    <div style="margin-top: 16px;">
+      <label>Payment Method:</label>
+      <div class="payment-options">
+        <div id="payCash" class="pay-btn active" onclick="setPayment('Cash')">💵 Cash on Pick-up</div>
+        <div id="payOnline" class="pay-btn" onclick="setPayment('GCash/Maya')">📱 GCash / Maya</div>
       </div>
-      <div>
-        <label>Medium Rate (₱):</label>
-        <input type="number" id="rateMed" value="6">
-      </div>
-      <div>
-        <label>Heavy Rate (₱):</label>
-        <input type="number" id="rateHeavy" value="10">
+
+      <div id="qrAccordion" class="qr-instructions" style="display: none;">
+        <div>Please send payment to GCash/Maya number: <strong>09XX-XXX-XXXX</strong></div>
+        <div class="qr-placeholder">QR CODE HERE</div>
+        <small style="color: var(--text-muted);">Include receipt total in reference note</small>
       </div>
     </div>
   </div>
 
-  <!-- UPLOAD SECTION -->
-  <div class="upload-box">
-    <h3>📄 Upload PDF Document</h3>
-    <input type="file" id="pdfUpload" accept="application/pdf">
-    <div id="status" class="status"></div>
+  <!-- UPLOAD PANEL -->
+  <div class="card">
+    <div class="card-title">📂 2. Upload PDF Documents</div>
+    
+    <div class="upload-zone" onclick="document.getElementById('pdfInput').click()">
+      <div class="upload-icon">📄</div>
+      <div style="font-weight: 600;">Click or drag & drop PDF files here</div>
+      <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Supports multiple file selection (Max 25 MB/file)</div>
+      <input type="file" id="pdfInput" accept="application/pdf" multiple style="display:none;" onchange="handleFileSelect(event)">
+    </div>
+
+    <!-- QUEUED FILES LIST -->
+    <div id="fileQueue" class="file-queue"></div>
   </div>
 
   <!-- RECEIPT CARD -->
-  <div id="receiptBox" class="receipt-container" style="display:none;">
+  <div id="receiptBox" class="receipt-wrapper" style="display: none;">
     <div class="receipt-header">
-      <h3>=== PRINT ORDER RECEIPT ===</h3>
-      <p id="receiptDate" style="margin: 5px 0 0 0; font-size: 0.85rem;"></p>
+      <h2>AFTERHOURS PRINT PH</h2>
+      <p>Order Receipt</p>
+      <p id="receiptDate"></p>
+      <p id="receiptPayMethod" style="font-weight: bold; margin-top: 2px;"></p>
     </div>
 
     <table class="receipt-table">
@@ -99,140 +195,290 @@
       <tbody id="receiptRows"></tbody>
     </table>
 
+    <div class="receipt-summary">
+      <div class="summary-line">
+        <span>Total Sheets Summary:</span>
+        <span id="sheetSummaryText" style="font-weight: bold;"></span>
+      </div>
+      <div class="summary-line total">
+        <span>TOTAL AMOUNT DUE:</span>
+        <span>₱<span id="receiptTotalAmount">0</span></span>
+      </div>
+    </div>
+
     <div class="receipt-footer">
-      <span>TOTAL AMOUNT DUE:</span>
-      <span class="total-price">₱<span id="receiptTotal"></span></span>
+      Thank you for printing with us!
     </div>
   </div>
+
+  <button id="downloadBtn" class="btn-download" style="display:none;" onclick="downloadReceipt()">
+    📥 Download Order Receipt (PNG)
+  </button>
 </div>
 
 <script>
-  // 1. SUPABASE CONFIGURATION (Replace with your actual keys)
+  // SUPABASE CLOUD SETUP
   const SUPABASE_URL = 'https://rqzvjnhjeqnfpsiemcwh.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxenZqbmhqZXFuZnBzaWVtY3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3Mjc0MTcsImV4cCI6MjEwNzMwMzQxN30.Qpg19alABUF3sJ76PPlVjonVQ7Kf7YhHGm8yUonUHsQ';
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // FIXED WHOLE-PESO RATES
+  const RATES = {
+    'Black & White': 2,
+    'Light Color': 4,
+    'Medium Color': 6,
+    'Heavy Color': 10
+  };
 
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-  document.getElementById('pdfUpload').addEventListener('change', async function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+  let queuedFiles = [];
+  let selectedPayment = 'Cash';
 
-    const statusDiv = document.getElementById('status');
-    statusDiv.className = 'status';
+  function setPayment(method) {
+    selectedPayment = method;
+    document.getElementById('payCash').classList.toggle('active', method === 'Cash');
+    document.getElementById('payOnline').classList.toggle('active', method === 'GCash/Maya');
+    document.getElementById('qrAccordion').style.display = method === 'GCash/Maya' ? 'block' : 'none';
+    renderReceipt();
+  }
 
-    // File Size Guardrail (25 MB)
-    if (file.size > 25 * 1024 * 1024) {
-      statusDiv.className = 'error';
-      statusDiv.textContent = 'Error: File size exceeds 25 MB limit.';
-      return;
-    }
-
-    statusDiv.textContent = 'Analyzing PDF pages and uploading to cloud...';
-
-    // Upload File to Supabase Bucket: customer-files
-    const fileName = `${Date.now()}_${file.name}`;
-    const { data: uploadData, error: uploadError } = await supabaseClient
-      .storage
-      .from('customer-files')
-      .upload(fileName, file);
-
-    if (uploadError) {
-      console.warn('Upload Warning:', uploadError.message);
-      statusDiv.textContent = 'PDF analyzed locally.';
-    } else {
-      statusDiv.textContent = 'PDF analyzed & synced with print queue successfully!';
-    }
-
-    // Read Rate Configurations
-    const paperTag = document.getElementById('paperType').value;
-    const rBW = parseInt(document.getElementById('rateBW').value);
-    const rLight = parseInt(document.getElementById('rateLight').value);
-    const rMed = parseInt(document.getElementById('rateMed').value);
-    const rHeavy = parseInt(document.getElementById('rateHeavy').value);
-
-    const fileReader = new FileReader();
-    fileReader.onload = async function() {
-      const typedarray = new Uint8Array(this.result);
-      const pdf = await pdfjsLib.getDocument(typedarray).promise;
-
-      let categories = {
-        'Black & White': { pages: [], rate: rBW },
-        'Light Color': { pages: [], rate: rLight },
-        'Medium Color': { pages: [], rate: rMed },
-        'Heavy Color': { pages: [], rate: rHeavy }
+  async function handleFileSelect(event) {
+    const files = Array.from(event.target.files);
+    for (let file of files) {
+      if (file.type !== 'application/pdf') continue;
+      
+      const fileId = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const fileData = {
+        id: fileId,
+        file: file,
+        name: file.name,
+        copies: 1,
+        pagesData: []
       };
 
-      // Loop through physical PDF pages
-      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        const page = await pdf.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 0.25 });
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
+      queuedFiles.push(fileData);
+      uploadToSupabase(file);
+      await analyzePDF(fileData);
+    }
+    renderQueueUI();
+    renderReceipt();
+  }
 
-        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+  async function uploadToSupabase(file) {
+    const fileName = `${Date.now()}_${file.name}`;
+    try {
+      await supabaseClient.storage.from('customer-files').upload(fileName, file);
+    } catch(err) {
+      console.warn('Supabase storage notification:', err.message);
+    }
+  }
 
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-        let coloredPixels = 0;
-        let totalPixels = imgData.length / 4;
+  // PDF PAGE COLOR & DIMENSION ANALYSIS ENGINE
+  async function analyzePDF(fileItem) {
+    const arrayBuffer = await fileItem.file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
 
-        for (let i = 0; i < imgData.length; i += 4) {
-          let r = imgData[i], g = imgData[i+1], b = imgData[i+2];
+    fileItem.pagesData = [];
 
-          // Ignore paper background noise/textures
-          if (r > 220 && g > 220 && b > 220) continue;
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      
+      // Point Dimension Calculation for Paper Auto-Detect
+      const view = page.view || [0, 0, 612, 792];
+      const width = Math.abs(view[2] - view[0]);
+      const height = Math.abs(view[3] - view[1]);
+      const portraitHeight = Math.max(width, height);
 
-          // Detect chroma variance
-          if (Math.abs(r - g) > 18 || Math.abs(r - b) > 18 || Math.abs(g - b) > 18) {
-            coloredPixels++;
-          }
-        }
+      let detectedPaper = 'SHORT';
+      if (portraitHeight > 880) {
+        detectedPaper = 'LONG'; // Captures 13" Long Folio & 14" Legal (>880pt threshold)
+      } else if (portraitHeight > 810) {
+        detectedPaper = 'A4';   // Captures A4
+      }
 
-        let ratio = coloredPixels / totalPixels;
+      // Render Canvas for Pixel Color Variance Scan
+      const viewport = page.getViewport({ scale: 0.2 });
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
 
-        if (ratio < 0.008) {
-          categories['Black & White'].pages.push(pageNum);
-        } else if (ratio < 0.06) {
-          categories['Light Color'].pages.push(pageNum);
-        } else if (ratio < 0.20) {
-          categories['Medium Color'].pages.push(pageNum);
-        } else {
-          categories['Heavy Color'].pages.push(pageNum);
+      await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      let coloredPixels = 0;
+      let totalPixels = imgData.length / 4;
+
+      for (let i = 0; i < imgData.length; i += 4) {
+        let r = imgData[i], g = imgData[i+1], b = imgData[i+2];
+        if (r > 220 && g > 220 && b > 220) continue; // Ignore paper background
+        if (Math.abs(r - g) > 18 || Math.abs(r - b) > 18 || Math.abs(g - b) > 18) {
+          coloredPixels++;
         }
       }
 
-      // Render Receipt Rows
-      const tbody = document.getElementById('receiptRows');
-      tbody.innerHTML = '';
-      let totalCharge = 0;
+      let ratio = coloredPixels / totalPixels;
+      let category = 'Black & White';
+      if (ratio >= 0.20) category = 'Heavy Color';
+      else if (ratio >= 0.06) category = 'Medium Color';
+      else if (ratio >= 0.008) category = 'Light Color';
 
-      for (const [catName, data] of Object.entries(categories)) {
-        if (data.pages.length === 0) continue;
-        let qty = data.pages.length;
-        let subtotal = qty * data.rate;
-        totalCharge += subtotal;
+      fileItem.pagesData.push({
+        pageNum: pageNum,
+        category: category,
+        detectedPaper: detectedPaper
+      });
+    }
+  }
+
+  function updateCopies(id, delta) {
+    const fileItem = queuedFiles.find(f => f.id === id);
+    if (fileItem) {
+      fileItem.copies = Math.max(1, fileItem.copies + delta);
+      renderQueueUI();
+      renderReceipt();
+    }
+  }
+
+  function removeFile(id) {
+    queuedFiles = queuedFiles.filter(f => f.id !== id);
+    renderQueueUI();
+    renderReceipt();
+  }
+
+  function recalculateAll() {
+    renderReceipt();
+  }
+
+  function renderQueueUI() {
+    const queueDiv = document.getElementById('fileQueue');
+    queueDiv.innerHTML = '';
+
+    queuedFiles.forEach(f => {
+      const item = document.createElement('div');
+      item.className = 'file-item';
+      item.innerHTML = `
+        <div class="file-info">
+          <div class="file-name">📄 ${f.name}</div>
+          <div class="file-meta">${f.pagesData.length} page(s) analyzed</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="counter-group">
+            <button class="counter-btn" onclick="updateCopies('${f.id}', -1)">-</button>
+            <span class="counter-value">${f.copies}</span>
+            <button class="counter-btn" onclick="updateCopies('${f.id}', 1)">+</button>
+          </div>
+          <button class="btn-delete" onclick="removeFile('${f.id}')">🗑️ Remove</button>
+        </div>
+      `;
+      queueDiv.appendChild(item);
+    });
+  }
+
+  // ITEMIZED CONSOLIDATED RECEIPT GENERATOR
+  function renderReceipt() {
+    const receiptBox = document.getElementById('receiptBox');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    if (queuedFiles.length === 0) {
+      receiptBox.style.display = 'none';
+      downloadBtn.style.display = 'none';
+      return;
+    }
+
+    const paperPreset = document.getElementById('paperSizeSelect').value;
+    const printMode = document.getElementById('printModeSelect').value;
+    const tbody = document.getElementById('receiptRows');
+    tbody.innerHTML = '';
+
+    let grandTotal = 0;
+    let paperCounts = { 'SHORT': 0, 'A4': 0, 'LONG': 0 };
+
+    queuedFiles.forEach((fileItem, idx) => {
+      // Group pages by coverage category & paper size
+      let categories = {};
+
+      fileItem.pagesData.forEach(p => {
+        let finalCategory = (printMode === 'BW') ? 'Black & White' : p.category;
+        let finalPaper = (paperPreset === 'AUTO') ? p.detectedPaper : paperPreset;
+
+        paperCounts[finalPaper] += fileItem.copies;
+
+        let key = `${finalPaper}_${finalCategory}`;
+        if (!categories[key]) {
+          categories[key] = {
+            paper: finalPaper,
+            category: finalCategory,
+            pages: [],
+            rate: RATES[finalCategory]
+          };
+        }
+        categories[key].pages.push(p.pageNum);
+      });
+
+      // Render File Header Row
+      // CORRECTED PLURALIZATION: "Copies"
+      const copyLabel = fileItem.copies > 1 ? ` (${fileItem.copies} Copies)` : '';
+      let fileHeaderRow = `<tr>
+        <td colspan="5" class="file-heading">FILE ${idx + 1}: ${fileItem.name}${copyLabel}</td>
+      </tr>`;
+      tbody.innerHTML += fileHeaderRow;
+
+      // Render Itemized Rows for File
+      for (const data of Object.values(categories)) {
+        let baseQty = data.pages.length;
+        let totalQty = baseQty * fileItem.copies;
+        let subtotal = totalQty * data.rate;
+        grandTotal += subtotal;
 
         let pageStr = data.pages.join(', ');
 
         let row = `<tr>
-          <td><span class="paper-tag">${paperTag}</span></td>
-          <td><strong>${catName}</strong><br><small>↳ Pages: ${pageStr}</small></td>
-          <td>${qty}</td>
-          <td>₱${data.rate}</td>
-          <td style="text-align:right;">₱${subtotal}</td>
+          <td style="vertical-align: middle;"><span class="paper-tag">${data.paper}</span></td>
+          <td><strong>${data.category}</strong><br><small style="color:#555;">↳ Pg: ${pageStr}</small></td>
+          <td style="vertical-align: middle;">${totalQty}</td>
+          <td style="vertical-align: middle;">₱${data.rate}</td>
+          <td style="text-align:right; vertical-align: middle; font-weight: bold;">₱${subtotal}</td>
         </tr>`;
         tbody.innerHTML += row;
       }
+    });
 
-      document.getElementById('receiptDate').textContent = `Date: ${new Date().toLocaleDateString()}`;
-      document.getElementById('receiptTotal').textContent = totalCharge;
-      document.getElementById('receiptBox').style.display = 'block';
-    };
+    // Summary Text
+    let summaryParts = [];
+    if (paperCounts['SHORT'] > 0) summaryParts.push(`${paperCounts['SHORT']} Short`);
+    if (paperCounts['A4'] > 0) summaryParts.push(`${paperCounts['A4']} A4`);
+    if (paperCounts['LONG'] > 0) summaryParts.push(`${paperCounts['LONG']} Long`);
+    
+    let totalSheets = paperCounts['SHORT'] + paperCounts['A4'] + paperCounts['LONG'];
 
-    fileReader.readAsArrayBuffer(file);
-  });
+    document.getElementById('sheetSummaryText').textContent = `${summaryParts.join(' | ')} (${totalSheets} Sheets Total)`;
+    document.getElementById('receiptTotalAmount').textContent = grandTotal;
+    document.getElementById('receiptDate').textContent = `Date: ${new Date().toLocaleDateString()}`;
+    document.getElementById('receiptPayMethod').textContent = `Payment: ${selectedPayment}`;
+
+    receiptBox.style.display = 'block';
+    downloadBtn.style.display = 'block';
+  }
+
+  // DOWNLOADABLE PNG RECEIPT VIA HTML2CANVAS
+  async function downloadReceipt() {
+    const receiptElement = document.getElementById('receiptBox');
+    
+    // High-resolution canvas capture
+    const canvas = await html2canvas(receiptElement, {
+      scale: 2,               // Crisp 2x pixel ratio
+      useCORS: true,           // Avoids font/image CORS blocks
+      backgroundColor: '#ffffff', // Ensures clean solid background
+      logging: false
+    });
+
+    const link = document.createElement('a');
+    link.download = 'afterhours_receipt.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
 </script>
 </body>
 </html>
