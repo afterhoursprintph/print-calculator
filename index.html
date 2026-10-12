@@ -283,7 +283,6 @@
   }
 
   function updateSubmitState() {
-    // Enabled as long as at least 1 PDF file is selected (Name is optional)
     const btn = document.getElementById('submitOrderBtn');
     btn.disabled = !(queuedFiles.length > 0);
   }
@@ -502,9 +501,11 @@
     btn.disabled = true;
     btn.textContent = '⏳ Uploading Files & Logging Order...';
 
+    const paperPreset = document.getElementById('paperSizeSelect').value;
+    const printMode = document.getElementById('printModeSelect').value;
     const uploadedFilePaths = [];
 
-    // 1. Upload files to Supabase Storage
+    // 1. Upload files to Supabase Storage & build print specification details for admin.html
     for (let f of queuedFiles) {
       const storagePath = `${Date.now()}_${f.name}`;
       const { data: storageData, error: storageErr } = await supabaseClient
@@ -520,7 +521,24 @@
         return;
       }
 
-      uploadedFilePaths.push({ name: f.name, path: storagePath, copies: f.copies });
+      // Build categories list for admin operator view
+      let categories = {};
+      f.pagesData.forEach(p => {
+        let finalCategory = (printMode === 'BW') ? 'Black & White' : p.category;
+        let finalPaper = (paperPreset === 'AUTO') ? p.detectedPaper : paperPreset;
+        let key = `${finalPaper}_${finalCategory}`;
+        if (!categories[key]) {
+          categories[key] = { paper: finalPaper, category: finalCategory, pages: [] };
+        }
+        categories[key].pages.push(p.pageNum);
+      });
+
+      uploadedFilePaths.push({ 
+        name: f.name, 
+        path: storagePath, 
+        copies: f.copies,
+        print_details: Object.values(categories)
+      });
     }
 
     // 2. Insert order record into Supabase Database Table
