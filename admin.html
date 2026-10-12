@@ -56,15 +56,21 @@
     .btn-refresh:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
 
     /* Orders List */
-    .orders-grid { display: flex; flex-direction: column; gap: 16px; max-width: 900px; margin: 0 auto; }
-    
-    . { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; }
-    .order-card.completed {
-          opacity: 0.55;
-          background: rgba(15, 23, 42, 0.5);
-          border-color: rgba(51, 65, 85, 0.5);
-          backdrop-filter: blur(4px);
-        }
+    .order-card { 
+      background: var(--card-bg); 
+      border: 1.5px solid #475569; 
+      border-radius: 12px; 
+      padding: 20px; 
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); 
+      position: relative; 
+    }
+
+    .order-card.completed { 
+      opacity: 0.65; 
+      background: rgba(30, 41, 59, 0.4); 
+      border: 1.5px solid rgba(56, 189, 248, 0.35); 
+      backdrop-filter: blur(6px); 
+    }
 
     .order-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
     .customer-title { font-size: 1.2rem; font-weight: 700; color: #fff; margin: 0; }
