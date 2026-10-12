@@ -4,11 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AfterHours Print PH - Digital Print Queue & Pricing Engine</title>
-  <!-- PDF.js for PDF rendering & page analysis -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-  <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- html2canvas for downloadable receipt PNG -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style>
@@ -41,9 +38,8 @@
 
     label { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
     select, input[type="text"] { width: 100%; background: #0f172a; border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 8px; font-size: 0.95rem; outline: none; }
-    select:focus { border-color: var(--accent-blue); }
+    select:focus, input[type="text"]:focus { border-color: var(--accent-blue); }
 
-    /* Payment Methods UI */
     .payment-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
     .pay-btn { background: #0f172a; border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; color: var(--text-main); cursor: pointer; text-align: center; font-weight: 600; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .pay-btn:hover { border-color: var(--accent-blue); }
@@ -52,12 +48,10 @@
     .qr-instructions { background: #0f172a; border: 1px dashed var(--accent-blue); border-radius: 8px; padding: 16px; margin-top: 12px; text-align: center; font-size: 0.88rem; }
     .qr-placeholder { width: 130px; height: 130px; background: #fff; margin: 10px auto; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold; font-size: 0.75rem; }
 
-    /* Upload Box */
     .upload-zone { border: 2px dashed var(--border-color); border-radius: 12px; padding: 30px; text-align: center; background: rgba(15, 23, 42, 0.5); cursor: pointer; transition: all 0.2s ease; }
     .upload-zone:hover { border-color: var(--accent-blue); background: rgba(56, 189, 248, 0.05); }
     .upload-icon { font-size: 2.2rem; margin-bottom: 8px; color: var(--accent-blue); }
 
-    /* File List Queue */
     .file-queue { margin-top: 20px; display: flex; flex-direction: column; gap: 12px; }
     .file-item { background: #0f172a; border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
     .file-info { display: flex; flex-direction: column; gap: 2px; }
@@ -72,7 +66,10 @@
     .btn-delete { background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: var(--danger); border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 0.85rem; }
     .btn-delete:hover { background: var(--danger); color: #fff; }
 
-    /* Itemized Receipt Area */
+    .btn-submit { width: 100%; background: var(--accent-blue); color: #000; border: none; padding: 16px; border-radius: 8px; font-size: 1.05rem; font-weight: 800; cursor: pointer; margin-top: 15px; transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 0.5px; }
+    .btn-submit:hover { background: var(--accent-hover); color: #fff; }
+    .btn-submit:disabled { background: var(--border-color); color: var(--text-muted); cursor: not-allowed; }
+
     .receipt-wrapper { background: #ffffff; color: #000000; border-radius: 8px; padding: 25px; font-family: 'Courier New', Courier, monospace; box-shadow: 0 4px 20px rgba(0,0,0,0.5); margin-top: 25px; }
     .receipt-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px; }
     .receipt-header h2 { margin: 0; font-size: 1.3rem; letter-spacing: 1px; color: #000; font-weight: 800; }
@@ -82,7 +79,6 @@
     .receipt-table th { text-align: left; border-bottom: 2px solid #000; padding-bottom: 6px; font-size: 0.8rem; font-weight: bold; }
     .receipt-table td { padding: 8px 0; border-bottom: 1px dashed #ccc; vertical-align: top; font-size: 0.85rem; color: #000; }
 
-    /* CANVAS-FRIENDLY BADGE STYLING (FIXES CLIPPING) */
     .paper-tag {
       display: inline-flex;
       align-items: center;
@@ -106,9 +102,6 @@
     .summary-line.total { border-top: 2px solid #000; padding-top: 8px; font-size: 1.15rem; font-weight: 800; margin-top: 8px; }
 
     .receipt-footer { text-align: center; border-top: 1px dashed #000; margin-top: 16px; padding-top: 12px; font-size: 0.8rem; font-weight: bold; }
-
-    .btn-download { width: 100%; background: var(--success); color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 15px; transition: opacity 0.2s; }
-    .btn-download:hover { opacity: 0.9; }
   </style>
 </head>
 <body>
@@ -123,6 +116,12 @@
   <div class="card">
     <div class="card-title">⚙️ 1. Order Configurations</div>
     
+    <!-- CUSTOMER NAME FIELD HERE -->
+    <div style="margin-bottom: 16px;">
+      <label for="customerNameInput">Customer Name:</label>
+      <input type="text" id="customerNameInput" placeholder="Enter your full name" oninput="updateSubmitState()">
+    </div>
+
     <div class="grid-2">
       <div>
         <label for="paperSizeSelect">Paper Size Preset:</label>
@@ -152,7 +151,7 @@
 
       <div id="qrAccordion" class="qr-instructions" style="display: none;">
         <div>Please send payment to GCash/Maya number: <strong>09XX-XXX-XXXX</strong></div>
-        <div class="qr-placeholder"><img src="qr-code.png" alt="GCash/Maya QR Code" style="width: 180px; height: auto; border-radius: 8px; margin: 12px auto; display: block; border: 2px solid #fff;"></div>
+        <div class="qr-placeholder">QR CODE HERE</div>
         <small style="color: var(--text-muted);">Include receipt total in reference note</small>
       </div>
     </div>
@@ -160,7 +159,7 @@
 
   <!-- UPLOAD PANEL -->
   <div class="card">
-    <div class="card-title">📂 2. Upload PDF Documents</div>
+    <div class="card-title">📂 2. Select PDF Documents</div>
     
     <div class="upload-zone" onclick="document.getElementById('pdfInput').click()">
       <div class="upload-icon">📄</div>
@@ -169,8 +168,11 @@
       <input type="file" id="pdfInput" accept="application/pdf" multiple style="display:none;" onchange="handleFileSelect(event)">
     </div>
 
-    <!-- QUEUED FILES LIST -->
     <div id="fileQueue" class="file-queue"></div>
+
+    <button id="submitOrderBtn" class="btn-submit" disabled onclick="placeOrderAndDownload()">
+      🚀 Place Order & Download Receipt
+    </button>
   </div>
 
   <!-- RECEIPT CARD -->
@@ -178,6 +180,7 @@
     <div class="receipt-header">
       <h2>AFTERHOURS PRINT PH</h2>
       <p>Order Receipt</p>
+      <p id="receiptCustomerName" style="font-weight: bold; margin-top: 4px; text-transform: uppercase;"></p>
       <p id="receiptDate"></p>
       <p id="receiptPayMethod" style="font-weight: bold; margin-top: 2px;"></p>
     </div>
@@ -210,19 +213,13 @@
       Thank you for printing with us!
     </div>
   </div>
-
-  <button id="downloadBtn" class="btn-download" style="display:none;" onclick="downloadReceipt()">
-    📥 Download Order Receipt (PNG)
-  </button>
 </div>
 
 <script>
-  // SUPABASE CLOUD SETUP
   const SUPABASE_URL = 'https://rqzvjnhjeqnfpsiemcwh.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxenZqbmhqZXFuZnBzaWVtY3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3Mjc0MTcsImV4cCI6MjEwNzMwMzQxN30.Qpg19alABUF3sJ76PPlVjonVQ7Kf7YhHGm8yUonUHsQ';
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // FIXED WHOLE-PESO RATES
   const RATES = {
     'Black & White': 2,
     'Light Color': 4,
@@ -243,6 +240,12 @@
     renderReceipt();
   }
 
+  function updateSubmitState() {
+    const name = document.getElementById('customerNameInput').value.trim();
+    const btn = document.getElementById('submitOrderBtn');
+    btn.disabled = !(name.length > 0 && queuedFiles.length > 0);
+  }
+
   async function handleFileSelect(event) {
     const files = Array.from(event.target.files);
     for (let file of files) {
@@ -258,24 +261,14 @@
       };
 
       queuedFiles.push(fileData);
-      uploadToSupabase(file);
-      await analyzePDF(fileData);
+      await analyzePDFLocal(fileData);
     }
     renderQueueUI();
     renderReceipt();
+    updateSubmitState();
   }
 
-  async function uploadToSupabase(file) {
-    const fileName = `${Date.now()}_${file.name}`;
-    try {
-      await supabaseClient.storage.from('customer-files').upload(fileName, file);
-    } catch(err) {
-      console.warn('Supabase storage notification:', err.message);
-    }
-  }
-
-  // PDF PAGE COLOR & DIMENSION ANALYSIS ENGINE
-  async function analyzePDF(fileItem) {
+  async function analyzePDFLocal(fileItem) {
     const arrayBuffer = await fileItem.file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
 
@@ -284,7 +277,6 @@
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
       
-      // Point Dimension Calculation for Paper Auto-Detect
       const view = page.view || [0, 0, 612, 792];
       const width = Math.abs(view[2] - view[0]);
       const height = Math.abs(view[3] - view[1]);
@@ -292,12 +284,11 @@
 
       let detectedPaper = 'SHORT';
       if (portraitHeight > 880) {
-        detectedPaper = 'LONG'; // Captures 13" Long Folio & 14" Legal (>880pt threshold)
+        detectedPaper = 'LONG';
       } else if (portraitHeight > 810) {
-        detectedPaper = 'A4';   // Captures A4
+        detectedPaper = 'A4';
       }
 
-      // Render Canvas for Pixel Color Variance Scan
       const viewport = page.getViewport({ scale: 0.2 });
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -312,7 +303,7 @@
 
       for (let i = 0; i < imgData.length; i += 4) {
         let r = imgData[i], g = imgData[i+1], b = imgData[i+2];
-        if (r > 220 && g > 220 && b > 220) continue; // Ignore paper background
+        if (r > 220 && g > 220 && b > 220) continue;
         if (Math.abs(r - g) > 18 || Math.abs(r - b) > 18 || Math.abs(g - b) > 18) {
           coloredPixels++;
         }
@@ -345,6 +336,7 @@
     queuedFiles = queuedFiles.filter(f => f.id !== id);
     renderQueueUI();
     renderReceipt();
+    updateSubmitState();
   }
 
   function recalculateAll() {
@@ -376,14 +368,12 @@
     });
   }
 
-  // ITEMIZED CONSOLIDATED RECEIPT GENERATOR
   function renderReceipt() {
     const receiptBox = document.getElementById('receiptBox');
-    const downloadBtn = document.getElementById('downloadBtn');
+    const customerName = document.getElementById('customerNameInput').value.trim();
 
     if (queuedFiles.length === 0) {
       receiptBox.style.display = 'none';
-      downloadBtn.style.display = 'none';
       return;
     }
 
@@ -396,7 +386,6 @@
     let paperCounts = { 'SHORT': 0, 'A4': 0, 'LONG': 0 };
 
     queuedFiles.forEach((fileItem, idx) => {
-      // Group pages by coverage category & paper size
       let categories = {};
 
       fileItem.pagesData.forEach(p => {
@@ -417,15 +406,12 @@
         categories[key].pages.push(p.pageNum);
       });
 
-      // Render File Header Row
-      // CORRECTED PLURALIZATION: "Copies"
       const copyLabel = fileItem.copies > 1 ? ` (${fileItem.copies} Copies)` : '';
       let fileHeaderRow = `<tr>
         <td colspan="5" class="file-heading">FILE ${idx + 1}: ${fileItem.name}${copyLabel}</td>
       </tr>`;
       tbody.innerHTML += fileHeaderRow;
 
-      // Render Itemized Rows for File
       for (const data of Object.values(categories)) {
         let baseQty = data.pages.length;
         let totalQty = baseQty * fileItem.copies;
@@ -445,7 +431,6 @@
       }
     });
 
-    // Summary Text
     let summaryParts = [];
     if (paperCounts['SHORT'] > 0) summaryParts.push(`${paperCounts['SHORT']} Short`);
     if (paperCounts['A4'] > 0) summaryParts.push(`${paperCounts['A4']} A4`);
@@ -453,31 +438,68 @@
     
     let totalSheets = paperCounts['SHORT'] + paperCounts['A4'] + paperCounts['LONG'];
 
+    document.getElementById('receiptCustomerName').textContent = `Customer: ${customerName || 'Guest'}`;
     document.getElementById('sheetSummaryText').textContent = `${summaryParts.join(' | ')} (${totalSheets} Sheets Total)`;
     document.getElementById('receiptTotalAmount').textContent = grandTotal;
     document.getElementById('receiptDate').textContent = `Date: ${new Date().toLocaleDateString()}`;
     document.getElementById('receiptPayMethod').textContent = `Payment: ${selectedPayment}`;
 
     receiptBox.style.display = 'block';
-    downloadBtn.style.display = 'block';
   }
 
-  // DOWNLOADABLE PNG RECEIPT VIA HTML2CANVAS
-  async function downloadReceipt() {
+  async function placeOrderAndDownload() {
+    const customerName = document.getElementById('customerNameInput').value.trim();
+    if (!customerName || queuedFiles.length === 0) return;
+
+    const btn = document.getElementById('submitOrderBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Uploading Files & Generating Receipt...';
+
+    const uploadedFilePaths = [];
+
+    for (let f of queuedFiles) {
+      const storagePath = `${Date.now()}_${f.name}`;
+      try {
+        await supabaseClient.storage.from('customer-files').upload(storagePath, f.file);
+        uploadedFilePaths.push({ name: f.name, path: storagePath, copies: f.copies });
+      } catch (err) {
+        console.warn('Storage upload error:', err.message);
+      }
+    }
+
+    const totalAmount = parseFloat(document.getElementById('receiptTotalAmount').textContent) || 0;
+    try {
+      await supabaseClient.from('orders').insert([
+        {
+          customer_name: customerName,
+          payment_method: selectedPayment,
+          files_data: uploadedFilePaths,
+          total_amount: totalAmount,
+          status: 'Pending'
+        }
+      ]);
+    } catch (err) {
+      console.warn('Database logging error:', err.message);
+    }
+
     const receiptElement = document.getElementById('receiptBox');
-    
-    // High-resolution canvas capture
     const canvas = await html2canvas(receiptElement, {
-      scale: 2,               // Crisp 2x pixel ratio
-      useCORS: true,           // Avoids font/image CORS blocks
-      backgroundColor: '#ffffff', // Ensures clean solid background
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
       logging: false
     });
 
     const link = document.createElement('a');
-    link.download = 'afterhours_receipt.png';
+    link.download = `afterhours_receipt_${customerName.replace(/\s+/g, '_')}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
+
+    btn.textContent = '✅ Order Placed & Receipt Downloaded!';
+    setTimeout(() => {
+      btn.textContent = '🚀 Place Order & Download Receipt';
+      btn.disabled = false;
+    }, 4000);
   }
 </script>
 </body>
