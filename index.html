@@ -333,7 +333,7 @@
     updateSubmitState();
   }
 
-  // 100% LOCAL PDF PAGE COLOR & DIMENSION ANALYSIS (NO CLOUD UPLOAD YET)
+// OPTIMIZED FAST LOCAL PDF ANALYSIS (MOBILE & MERGED PDF FRIENDLY)
   async function analyzePDFLocal(fileItem) {
     const arrayBuffer = await fileItem.file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
@@ -350,14 +350,15 @@
 
       let detectedPaper = 'SHORT';
       if (portraitHeight > 880) {
-        detectedPaper = 'LONG'; // 13" Folio / 14" Legal threshold
+        detectedPaper = 'LONG';
       } else if (portraitHeight > 810) {
         detectedPaper = 'A4';
       }
 
-      const viewport = page.getViewport({ scale: 0.2 });
+      // Micro canvas viewport (0.08) reduces render workload by 80%
+      const viewport = page.getViewport({ scale: 0.08 });
       const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
       canvas.height = viewport.height;
       canvas.width = viewport.width;
 
@@ -365,17 +366,19 @@
 
       const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
       let coloredPixels = 0;
-      let totalPixels = imgData.length / 4;
+      let checkedPixels = 0;
 
-      for (let i = 0; i < imgData.length; i += 4) {
+      // Pixel stride step (i += 16) scans 4x faster per page
+      for (let i = 0; i < imgData.length; i += 16) {
         let r = imgData[i], g = imgData[i+1], b = imgData[i+2];
-        if (r > 220 && g > 220 && b > 220) continue;
+        checkedPixels++;
+        if (r > 220 && g > 220 && b > 220) continue; // Skip background white pixels
         if (Math.abs(r - g) > 18 || Math.abs(r - b) > 18 || Math.abs(g - b) > 18) {
           coloredPixels++;
         }
       }
 
-      let ratio = coloredPixels / totalPixels;
+      let ratio = checkedPixels > 0 ? (coloredPixels / checkedPixels) : 0;
       let category = 'Black & White';
       if (ratio >= 0.20) category = 'Heavy Color';
       else if (ratio >= 0.06) category = 'Medium Color';
@@ -386,6 +389,13 @@
         category: category,
         detectedPaper: detectedPaper
       });
+
+      // Free canvas memory immediately
+      canvas.width = 0;
+      canvas.height = 0;
+
+      // Yield execution to keep mobile browser UI smooth and unlagged
+      await new Promise(resolve => setTimeout(resolve, 0));
     }
   }
 
