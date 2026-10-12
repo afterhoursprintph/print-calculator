@@ -613,10 +613,19 @@
     link.click();
 
     btn.textContent = '✅ Order Submitted & Receipt Downloaded!';
-    setTimeout(() => {
-      btn.textContent = '🖨️ Print Files & Download Receipt';
-      btn.disabled = false;
-    }, 4000);
+
+  // Clear file queue and reset inputs for the next customer
+  queuedFiles = [];
+  document.getElementById('customerNameInput').value = '';
+  document.getElementById('pdfInput').value = '';
+  renderQueueUI();
+  
+  setTimeout(() => {
+    btn.textContent = '🖨️ Print Files & Download Receipt';
+    document.getElementById('receiptBox').style.display = 'none';
+    updateSubmitState(); // Disables button until new PDFs are added
+  }, 3000);
+}
   }
 </script>
 </body>
