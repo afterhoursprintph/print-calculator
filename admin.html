@@ -25,7 +25,8 @@
     }
 
     * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
-    body { background-color: var(--bg-dark); color: var(--text-main); margin: 0; padding: 24px; }
+    body { background-color: var(--bg-dark); color: var(--text-main); margin: 0; padding: 24px 16px; display: flex; justify-content: center; min-height: 100vh; }
+    .container { width: 100%; max-width: 880px; }
     
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; flex-wrap: wrap; gap: 12px; }
     header h1 { margin: 0; font-size: 1.8rem; color: #fff; }
@@ -35,7 +36,7 @@
     .pulse-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 8px var(--success); }
 
     /* Control Bar & Search */
-    .controls-wrapper { display: flex; flex-direction: column; gap: 16px; max-width: 900px; margin: 0 auto 24px auto; }
+    .controls-wrapper { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
     
     .top-nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
     
@@ -47,7 +48,7 @@
     .badge-count { background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; font-weight: 800; border: 1px solid rgba(56, 189, 248, 0.3); }
     .tab-btn.active .badge-count { background: var(--accent-blue); color: #000; border: none; }
 
-    .search-box { flex: 1; min-width: 240px; position: relative; }
+    .search-box { flex: 1; min-width: 220px; position: relative; }
     .search-input { width: 100%; background: #0f172a; border: 1px solid var(--border-color); color: #fff; padding: 10px 14px 10px 38px; border-radius: 8px; font-size: 0.9rem; outline: none; transition: border 0.2s; }
     .search-input:focus { border-color: var(--accent-blue); }
     .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.9rem; pointer-events: none; }
@@ -56,6 +57,8 @@
     .btn-refresh:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
 
     /* Orders List */
+    .orders-grid { display: flex; flex-direction: column; gap: 16px; width: 100%; }
+    
     .order-card { 
       background: var(--card-bg); 
       border: 1.5px solid #475569; 
@@ -104,6 +107,7 @@
 </head>
 <body>
 
+<div class="container">
   <header>
     <h1>AfterHours <span>Print Queue Operator</span></h1>
     <div class="status-badge-live">
@@ -134,10 +138,11 @@
   <div id="ordersContainer" class="orders-grid">
     <div class="empty-state">Loading print queue...</div>
   </div>
+</div>
 
 <script>
   const SUPABASE_URL = 'https://rqzvjnhjeqnfpsiemcwh.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxenZqbmhqZXFuZnBzaWVtY3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3Mjc0MTcsImV4cCI6MjEwNzMwMzQxN30.Qpg19alABUF3sJ76PPlVjonVQ7Kf7YhHGm8yUonUHsQ';
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let allOrders = [];
