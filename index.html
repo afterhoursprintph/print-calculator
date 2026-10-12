@@ -9,7 +9,7 @@
   <meta name="title" content="AfterHours Print PH">
   <meta name="description" content="Digital Print Queue & Automated Pricing Engine. Upload PDF documents and calculate print costs online.">
 
-  <!-- Open Graph / Facebook / Messenger / Viber -->
+  <!-- Open Graph / Facebook / Messenger / Viber Link Previews -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://afterhoursprintph.github.io/print-calculator/">
   <meta property="og:title" content="AfterHours Print PH">
@@ -26,7 +26,7 @@
   <meta name="twitter:image" content="https://afterhoursprintph.github.io/print-calculator/preview.png">
 
   <!-- Tab Favicon Icon -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧾</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖨️</text></svg>">
 
   <!-- PDF.js for PDF rendering & page analysis -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -333,7 +333,7 @@
     updateSubmitState();
   }
 
-// OPTIMIZED FAST LOCAL PDF ANALYSIS (MOBILE & MERGED PDF FRIENDLY)
+  // OPTIMIZED FAST LOCAL PDF ANALYSIS (MOBILE & MERGED PDF FRIENDLY)
   async function analyzePDFLocal(fileItem) {
     const arrayBuffer = await fileItem.file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
@@ -539,7 +539,7 @@
     const printMode = document.getElementById('printModeSelect').value;
     const uploadedFilePaths = [];
 
-    // 1. Upload files to Supabase Storage & build print specification details for admin.html
+    // 1. Upload files to Supabase Storage & build print breakdown
     for (let f of queuedFiles) {
       const storagePath = `${Date.now()}_${f.name}`;
       const { data: storageData, error: storageErr } = await supabaseClient
@@ -555,7 +555,7 @@
         return;
       }
 
-      // Build categories list for admin operator view
+      // Build categories summary for operator view
       let categories = {};
       f.pagesData.forEach(p => {
         let finalCategory = (printMode === 'BW') ? 'Black & White' : p.category;
@@ -614,18 +614,17 @@
 
     btn.textContent = '✅ Order Submitted & Receipt Downloaded!';
 
-  // Clear file queue and reset inputs for the next customer
-  queuedFiles = [];
-  document.getElementById('customerNameInput').value = '';
-  document.getElementById('pdfInput').value = '';
-  renderQueueUI();
-  
-  setTimeout(() => {
-    btn.textContent = '🖨️ Print Files & Download Receipt';
-    document.getElementById('receiptBox').style.display = 'none';
-    updateSubmitState(); // Disables button until new PDFs are added
-  }, 3000);
-}
+    // Clear file queue and reset inputs for the next customer
+    queuedFiles = [];
+    document.getElementById('customerNameInput').value = '';
+    document.getElementById('pdfInput').value = '';
+    renderQueueUI();
+
+    setTimeout(() => {
+      btn.textContent = '🖨️ Print Files & Download Receipt';
+      document.getElementById('receiptBox').style.display = 'none';
+      updateSubmitState(); // Disables button until new PDFs are added
+    }, 3000);
   }
 </script>
 </body>
