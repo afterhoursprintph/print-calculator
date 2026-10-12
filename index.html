@@ -133,9 +133,10 @@
   <div class="card">
     <div class="card-title">⚙️ 1. Order Configurations</div>
     
+    <!-- OPTIONAL CUSTOMER NAME INPUT -->
     <div style="margin-bottom: 16px;">
-      <label for="customerNameInput">Customer Name:</label>
-      <input type="text" id="customerNameInput" placeholder="Enter your full name" oninput="updateSubmitState()">
+      <label for="customerNameInput">Customer Name (Optional):</label>
+      <input type="text" id="customerNameInput" placeholder="Enter your full name or leave blank for Guest" oninput="updateSubmitState()">
     </div>
 
     <div class="grid-2">
@@ -167,30 +168,30 @@
 
       <!-- Cash Reminder Note -->
       <div id="cashReminder" class="qr-instructions" style="display: block; border-color: var(--border-color);">
-        <div>💡 <strong>Pick-up Reminder:</strong> Please prepare the exact amount upon receiving  prints.</div>
+        <div>💡 <strong>Pick-up Reminder:</strong> Please prepare the exact amount upon receiving your prints.</div>
       </div>
 
       <!-- Dual GCash / Maya Accordion -->
-<div id="qrAccordion" class="qr-instructions" style="display: none;">
-  <div style="margin-bottom: 8px; font-size: 0.9rem;">
-    <strong>GCash / Maya Details:</strong><br>
-    Mobile No.: <span style="color: var(--accent-blue); font-weight: bold;">0963 741 4868</span><br>
-    Account Name: <span style="color: var(--accent-blue); font-weight: bold;">CH**E MO****N C.</span>
-  </div>
-  
-  <div class="qr-grid">
-    <div class="qr-card">
-      <img src="gcash-qr.png" alt="GCash QR Code" onerror="this.src='https://via.placeholder.com/160x160?text=GCash+QR'">
-      <div class="qr-label">GCash QR</div>
-    </div>
-    <div class="qr-card">
-      <img src="maya-qr.png" alt="Maya QR Code" onerror="this.src='https://via.placeholder.com/160x160?text=Maya+QR'">
-      <div class="qr-label">Maya QR</div>
-    </div>
-  </div>
+      <div id="qrAccordion" class="qr-instructions" style="display: none;">
+        <div style="margin-bottom: 8px; font-size: 0.9rem;">
+          <strong>GCash / Maya Details:</strong><br>
+          Mobile No.: <span style="color: var(--accent-blue); font-weight: bold;">0963 741 4868</span><br>
+          Account Name: <span style="color: var(--accent-blue); font-weight: bold;">CH**E MO****N C.</span>
+        </div>
+        
+        <div class="qr-grid">
+          <div class="qr-card">
+            <img src="gcash-qr.png" alt="GCash QR Code" onerror="this.src='https://via.placeholder.com/160x160?text=GCash+QR'">
+            <div class="qr-label">GCash QR</div>
+          </div>
+          <div class="qr-card">
+            <img src="maya-qr.png" alt="Maya QR Code" onerror="this.src='https://via.placeholder.com/160x160?text=Maya+QR'">
+            <div class="qr-label">Maya QR</div>
+          </div>
+        </div>
 
-  <small style="color: var(--text-muted);">Please include your name and receipt total in the reference note</small>
-</div>
+        <small style="color: var(--text-muted);">Please include your name and receipt total in the reference note</small>
+      </div>
     </div>
   </div>
 
@@ -282,9 +283,9 @@
   }
 
   function updateSubmitState() {
-    const name = document.getElementById('customerNameInput').value.trim();
+    // Enabled as long as at least 1 PDF file is selected (Name is optional)
     const btn = document.getElementById('submitOrderBtn');
-    btn.disabled = !(name.length > 0 && queuedFiles.length > 0);
+    btn.disabled = !(queuedFiles.length > 0);
   }
 
   async function handleFileSelect(event) {
@@ -412,7 +413,8 @@
 
   function renderReceipt() {
     const receiptBox = document.getElementById('receiptBox');
-    const customerName = document.getElementById('customerNameInput').value.trim();
+    const inputVal = document.getElementById('customerNameInput').value.trim();
+    const customerName = inputVal || 'Guest';
 
     if (queuedFiles.length === 0) {
       receiptBox.style.display = 'none';
@@ -480,7 +482,7 @@
     
     let totalSheets = paperCounts['SHORT'] + paperCounts['A4'] + paperCounts['LONG'];
 
-    document.getElementById('receiptCustomerName').textContent = `Customer: ${customerName || 'Guest'}`;
+    document.getElementById('receiptCustomerName').textContent = `Customer: ${customerName}`;
     document.getElementById('sheetSummaryText').textContent = `${summaryParts.join(' | ')} (${totalSheets} Sheets Total)`;
     document.getElementById('receiptTotalAmount').textContent = grandTotal;
     document.getElementById('receiptDate').textContent = `Date: ${new Date().toLocaleDateString()}`;
@@ -491,8 +493,10 @@
 
   // STRICT DEFERRED UPLOAD: EXECUTED ONLY WHEN USER CLICKS "PRINT FILES & DOWNLOAD RECEIPT"
   async function placeOrderAndDownload() {
-    const customerName = document.getElementById('customerNameInput').value.trim();
-    if (!customerName || queuedFiles.length === 0) return;
+    const inputVal = document.getElementById('customerNameInput').value.trim();
+    const customerName = inputVal || 'Guest';
+
+    if (queuedFiles.length === 0) return;
 
     const btn = document.getElementById('submitOrderBtn');
     btn.disabled = true;
@@ -503,18 +507,28 @@
     // 1. Upload files to Supabase Storage
     for (let f of queuedFiles) {
       const storagePath = `${Date.now()}_${f.name}`;
-      try {
-        await supabaseClient.storage.from('customer-files').upload(storagePath, f.file);
-        uploadedFilePaths.push({ name: f.name, path: storagePath, copies: f.copies });
-      } catch (err) {
-        console.warn('Storage upload error:', err.message);
+      const { data: storageData, error: storageErr } = await supabaseClient
+        .storage
+        .from('customer-files')
+        .upload(storagePath, f.file);
+
+      if (storageErr) {
+        console.error('Storage Upload Error:', storageErr);
+        alert('Storage Upload Failed: ' + storageErr.message);
+        btn.textContent = '🖨️ Print Files & Download Receipt';
+        btn.disabled = false;
+        return;
       }
+
+      uploadedFilePaths.push({ name: f.name, path: storagePath, copies: f.copies });
     }
 
     // 2. Insert order record into Supabase Database Table
     const totalAmount = parseFloat(document.getElementById('receiptTotalAmount').textContent) || 0;
-    try {
-      await supabaseClient.from('orders').insert([
+
+    const { data: dbData, error: dbErr } = await supabaseClient
+      .from('orders')
+      .insert([
         {
           customer_name: customerName,
           payment_method: selectedPayment,
@@ -523,8 +537,13 @@
           status: 'Pending'
         }
       ]);
-    } catch (err) {
-      console.warn('Database logging error:', err.message);
+
+    if (dbErr) {
+      console.error('Database Insert Error:', dbErr);
+      alert('Database Insert Failed: ' + dbErr.message + '\nCode: ' + dbErr.code);
+      btn.textContent = '🖨️ Print Files & Download Receipt';
+      btn.disabled = false;
+      return;
     }
 
     // 3. Render high-res downloadable receipt
