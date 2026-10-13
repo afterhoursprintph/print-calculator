@@ -365,7 +365,7 @@
     fileItem.pagesData = [];
 
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-     const page = await pdf.getPage(pageNum);
+      const page = await pdf.getPage(pageNum);
       
       const vp = page.getViewport({ scale: 1 });
       const view = page.cropBox || page.view || page.mediaBox || [0, 0, 612, 792];
@@ -374,7 +374,7 @@
       const rawH = Math.abs(view[3] - view[1]);
       const userUnit = page.userUnit || 1;
 
-      // Calculate absolute edges regardless of landscape/portrait orientation
+      // Calculate absolute dimensions regardless of landscape/portrait rotation
       const dim1 = Math.max(rawW * userUnit, vp.width);
       const dim2 = Math.max(rawH * userUnit, vp.height);
       
@@ -388,11 +388,11 @@
       if (maxDim > 880 || aspectRatio >= 1.48) {
         detectedPaper = 'LONG';
       } 
-      // 2. A4: Longest edge > 815 pt (11.3 inches) OR Aspect Ratio >= 1.35 (A4 11.69")
-      else if (maxDim > 815 || aspectRatio >= 1.35) {
+      // 2. A4: Longest edge > 825 pt AND Aspect Ratio >= 1.35 (A4 11.69" / 842 pt)
+      else if (maxDim > 825 && aspectRatio >= 1.35) {
         detectedPaper = 'A4';
       } 
-      // 3. SHORT: Standard Letter (11.0" / 792 pt / Aspect Ratio ~1.29)
+      // 3. SHORT: Letter size (792 pt / 11 in, Aspect Ratio ~1.29)
       else {
         detectedPaper = 'SHORT';
       }
