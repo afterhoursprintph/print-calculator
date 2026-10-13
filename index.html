@@ -278,9 +278,9 @@
 </div>
 
 <script>
-  const SUPABASE_URL = 'https://rqzvjnhjeqnfpsiemcwh.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxenZqbmhqZXFuZnBzaWVtY3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3Mjc0MTcsImV4cCI6MjEwNzMwMzQxN30.Qpg19alABUF3sJ76PPlVjonVQ7Kf7YhHGm8yUonUHsQ';
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+   SUPABASE_URL = 'https://rqzvjnhjeqnfpsiemcwh.supabase.co';
+   SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxenZqbmhqZXFuZnBzaWVtY3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3Mjc0MTcsImV4cCI6MjEwNzMwMzQxN30.Qpg19alABUF3sJ76PPlVjonVQ7Kf7YhHGm8yUonUHsQ';
+   supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const RATES = {
     'Black & White': 2,
@@ -343,15 +343,22 @@
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
       
-      const view = page.view || [0, 0, 612, 792];
-      const width = Math.abs(view[2] - view[0]);
-      const height = Math.abs(view[3] - view[1]);
-      const portraitHeight = Math.max(width, height);
+      // Get all bounding box sources and userUnit scale factor
+      const view = page.cropBox || page.view || page.mediaBox || [0, 0, 612, 792];
+      const rawW = Math.abs(view[2] - view[0]);
+      const rawH = Math.abs(view[3] - view[1]);
+      const userUnit = page.userUnit || 1;
+
+      // Get rotated viewport dimensions from PDF.js
+      const vp = page.getViewport({ scale: 1 });
+
+      // Always measure the longest edge (max dimension) across all PDF specs
+      const maxDim = Math.max(rawW * userUnit, rawH * userUnit, vp.width, vp.height);
 
       let detectedPaper = 'SHORT';
-      if (portraitHeight > 880) {
+      if (maxDim > 845) {        // Long / Legal (> 11.7 in / > 845 pt)
         detectedPaper = 'LONG';
-      } else if (portraitHeight > 810) {
+      } else if (maxDim > 810) {  // A4 (11.69 in / 811 pt - 845 pt)
         detectedPaper = 'A4';
       }
 
