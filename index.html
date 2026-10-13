@@ -374,21 +374,26 @@
       const rawH = Math.abs(view[3] - view[1]);
       const userUnit = page.userUnit || 1;
 
-      const edge1 = Math.max(rawW * userUnit, vp.width);
-      const edge2 = Math.max(rawH * userUnit, vp.height);
+      // Calculate absolute edges regardless of landscape/portrait orientation
+      const dim1 = Math.max(rawW * userUnit, vp.width);
+      const dim2 = Math.max(rawH * userUnit, vp.height);
       
-      const maxDim = Math.max(edge1, edge2);
-      const minDim = Math.min(edge1, edge2);
+      const maxDim = Math.max(dim1, dim2); // Longest edge
+      const minDim = Math.min(dim1, dim2); // Shortest edge
       const aspectRatio = minDim > 0 ? (maxDim / minDim) : 1.29;
 
       let detectedPaper = 'SHORT';
 
-      // Pure dimension & aspect ratio checks
-      if (aspectRatio >= 1.435 || maxDim > 835) {
+      // 1. LONG: Longest edge > 880 pt (12.2 inches) OR Aspect Ratio >= 1.48 (13" / 14" paper)
+      if (maxDim > 880 || aspectRatio >= 1.48) {
         detectedPaper = 'LONG';
-      } else if (aspectRatio >= 1.34 || maxDim > 800) {
+      } 
+      // 2. A4: Longest edge > 815 pt (11.3 inches) OR Aspect Ratio >= 1.35 (A4 11.69")
+      else if (maxDim > 815 || aspectRatio >= 1.35) {
         detectedPaper = 'A4';
-      } else {
+      } 
+      // 3. SHORT: Standard Letter (11.0" / 792 pt / Aspect Ratio ~1.29)
+      else {
         detectedPaper = 'SHORT';
       }
 
