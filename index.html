@@ -365,25 +365,31 @@
     fileItem.pagesData = [];
 
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
+     const page = await pdf.getPage(pageNum);
       
-      // Get all bounding box sources and userUnit scale factor
+      const vp = page.getViewport({ scale: 1 });
       const view = page.cropBox || page.view || page.mediaBox || [0, 0, 612, 792];
+      
       const rawW = Math.abs(view[2] - view[0]);
       const rawH = Math.abs(view[3] - view[1]);
       const userUnit = page.userUnit || 1;
 
-      // Get rotated viewport dimensions from PDF.js
-      const vp = page.getViewport({ scale: 1 });
-
-      // Always measure the longest edge (max dimension) across all PDF specs
-      const maxDim = Math.max(rawW * userUnit, rawH * userUnit, vp.width, vp.height);
+      const edge1 = Math.max(rawW * userUnit, vp.width);
+      const edge2 = Math.max(rawH * userUnit, vp.height);
+      
+      const maxDim = Math.max(edge1, edge2);
+      const minDim = Math.min(edge1, edge2);
+      const aspectRatio = minDim > 0 ? (maxDim / minDim) : 1.29;
 
       let detectedPaper = 'SHORT';
-      if (maxDim > 845) {        // Long / Legal (> 11.7 in / > 845 pt)
+
+      // Pure dimension & aspect ratio checks
+      if (aspectRatio >= 1.435 || maxDim > 835) {
         detectedPaper = 'LONG';
-      } else if (maxDim > 810) {  // A4 (11.69 in / 811 pt - 845 pt)
+      } else if (aspectRatio >= 1.34 || maxDim > 800) {
         detectedPaper = 'A4';
+      } else {
+        detectedPaper = 'SHORT';
       }
 
       // Micro canvas viewport (0.08) reduces render workload by 80%
