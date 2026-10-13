@@ -88,6 +88,7 @@
     /* Upload Box */
     .upload-zone { border: 2px dashed var(--border-color); border-radius: 12px; padding: 30px; text-align: center; background: rgba(15, 23, 42, 0.5); cursor: pointer; transition: all 0.2s ease; }
     .upload-zone:hover { border-color: var(--accent-blue); background: rgba(56, 189, 248, 0.05); }
+    .upload-zone.drag-over { border-color: var(--accent-blue); background: rgba(56, 189, 248, 0.15); }
     .upload-icon { font-size: 2.2rem; margin-bottom: 8px; color: var(--accent-blue); }
 
     /* File List Queue */
@@ -223,7 +224,7 @@
   <div class="card">
     <div class="card-title">📂 2. Select PDF Documents</div>
     
-    <div class="upload-zone" onclick="document.getElementById('pdfInput').click()">
+    <div id="uploadZone" class="upload-zone" onclick="document.getElementById('pdfInput').click()">
       <div class="upload-icon">📄</div>
       <div style="font-weight: 600;">Click or drag & drop PDF files here</div>
       <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Supports multiple file selection (Max 25 MB/file)</div>
@@ -310,7 +311,30 @@
     const btn = document.getElementById('submitOrderBtn');
     btn.disabled = !(queuedFiles.length > 0);
   }
+  
+// Drag and Drop Event Handlers
+  const uploadZone = document.getElementById('uploadZone');
 
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    uploadZone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
+    document.body.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
+  });
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    uploadZone.addEventListener(eventName, () => uploadZone.classList.add('drag-over'), false);
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    uploadZone.addEventListener(eventName, () => uploadZone.classList.remove('drag-over'), false);
+  });
+
+  uploadZone.addEventListener('drop', e => {
+    const dt = e.dataTransfer;
+    if (dt && dt.files.length > 0) {
+      handleFileSelect({ target: { files: dt.files } });
+    }
+  }, false);
+  
   async function handleFileSelect(event) {
     const files = Array.from(event.target.files);
     for (let file of files) {
