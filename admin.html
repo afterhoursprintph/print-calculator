@@ -318,9 +318,9 @@
     <!-- Flex wrapper to keep button on the same line as the name -->
     <div style="display: flex; align-items: center; gap: 8px;">
       <h3 class="customer-title" style="margin:0;">👤 ${order.customer_name || 'Guest'}</h3>
-      <button onclick="openOrderReceipt('${order.id}')" style="background:#0284c7; color:#fff; border:none; padding:3px 8px; border-radius:6px; cursor:pointer; font-size:0.75rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;">
-      👁️ View Receipt
-      </button>
+      <button onclick="event.stopPropagation(); openOrderReceipt('${order.id}')" style="background:#0284c7; color:#fff; border:none; padding:3px 8px; border-radius:6px; cursor:pointer; font-size:0.75rem; font-weight:600; display:inline-flex; align-items:center; gap:4px; position:relative; z-index:10;">
+  👁️ View Receipt
+</button>
     </div>
     <div class="order-time">Received: ${dateStr}</div>
   </div>
@@ -407,10 +407,10 @@
 </div>
   
 <script>
-    // Open dynamic order receipt by Order ID
-function openOrderReceipt(orderId) {
-  // Find order object from loaded state
+    // Explicitly attach to window scope
+window.openOrderReceipt = function(orderId) {
   const order = (typeof allOrders !== 'undefined' ? allOrders : []).find(o => String(o.id) === String(orderId));
+  
   if (!order) {
     alert('Order details not found.');
     return;
@@ -419,7 +419,6 @@ function openOrderReceipt(orderId) {
   const modal = document.getElementById('receiptModal');
   const receiptBody = document.getElementById('receiptBody');
 
-  // Build file breakdown list
   let filesHtml = '';
   if (Array.isArray(order.files_data) && order.files_data.length > 0) {
     order.files_data.forEach(f => {
@@ -435,7 +434,6 @@ function openOrderReceipt(orderId) {
 
   const formattedDate = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
 
-  // Inject receipt markup
   receiptBody.innerHTML = `
     <div style="margin-bottom:12px; font-size:0.8rem;">
       <div style="margin-bottom:2px;"><strong>Customer:</strong> ${order.customer_name || 'Guest'}</div>
@@ -455,11 +453,11 @@ function openOrderReceipt(orderId) {
   `;
 
   modal.style.display = 'flex';
-}
+};
 
-function closeReceiptModal() {
+window.closeReceiptModal = function() {
   document.getElementById('receiptModal').style.display = 'none';
-}
+};
 
   
 </body>
