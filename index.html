@@ -188,7 +188,7 @@
       <label>Payment Method:</label>
       <div class="payment-options">
         <div id="payCash" class="pay-btn active" onclick="setPayment('Cash')">💵 Cash on Pick-up</div>
-        <div id="payOnline" class="pay-btn" onclick="setPayment('GCash/Maya')">📱 GCash / Maya</div>
+        <div id="payOnline" class="pay-btn" onclick="setPayment('GCash/MariBank')">📱 GCash / MariBank</div>
       </div>
 
       <!-- Cash Reminder Note -->
@@ -196,10 +196,10 @@
         <div>💡 <strong>Pick-up Reminder:</strong> Please prepare the exact amount upon receiving your prints.</div>
       </div>
 
-      <!-- Dual GCash / Maya Accordion -->
+      <!-- Dual GCash / MariBank Accordion -->
       <div id="qrAccordion" class="qr-instructions" style="display: none;">
         <div style="margin-bottom: 8px; font-size: 0.9rem;">
-          <strong>GCash / Maya Details:</strong><br>
+          <strong>GCash / MariBank Details:</strong><br>
           Mobile No.: <span style="color: var(--accent-blue); font-weight: bold;">0963 741 4868</span><br>
           Account Name: <span style="color: var(--accent-blue); font-weight: bold;">CH**E MO****N C.</span>
         </div>
@@ -210,8 +210,8 @@
             <div class="qr-label">GCash QR</div>
           </div>
           <div class="qr-card">
-            <img src="maya-qr.png" alt="Maya QR Code" onerror="this.src='https://via.placeholder.com/160x160?text=Maya+QR'">
-            <div class="qr-label">Maya QR</div>
+            <img src="mariBank-qr.png" alt="MariBank QR Code" onerror="this.src='https://via.placeholder.com/160x160?text=MariBank+QR'">
+            <div class="qr-label">MariBank QR</div>
           </div>
         </div>
 
@@ -299,10 +299,10 @@
     selectedPayment = method;
 
     document.getElementById('payCash').classList.toggle('active', method === 'Cash');
-    document.getElementById('payOnline').classList.toggle('active', method === 'GCash/Maya');
+    document.getElementById('payOnline').classList.toggle('active', method === 'GCash/MariBank');
 
     document.getElementById('cashReminder').style.display = (method === 'Cash') ? 'block' : 'none';
-    document.getElementById('qrAccordion').style.display = (method === 'GCash/Maya') ? 'block' : 'none';
+    document.getElementById('qrAccordion').style.display = (method === 'GCash/MariBank') ? 'block' : 'none';
 
     renderReceipt();
   }
