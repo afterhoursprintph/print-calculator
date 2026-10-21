@@ -318,8 +318,8 @@
     <!-- Flex wrapper to keep button on the same line as the name -->
     <div style="display: flex; align-items: center; gap: 8px;">
       <h3 class="customer-title" style="margin:0;">👤 ${order.customer_name || 'Guest'}</h3>
-      <button onclick="openReceiptModal('${order.receipt_url || order.payment_proof || order.receipt_path || ''}')" style="background:#0284c7; color:#fff; border:none; padding:3px 8px; border-radius:6px; cursor:pointer; font-size:0.75rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;">
-        👁️ View Receipt
+      <button onclick="openOrderReceipt('${order.id}')" style="background:#0284c7; color:#fff; border:none; padding:3px 8px; border-radius:6px; cursor:pointer; font-size:0.75rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;">
+      👁️ View Receipt
       </button>
     </div>
     <div class="order-time">Received: ${dateStr}</div>
