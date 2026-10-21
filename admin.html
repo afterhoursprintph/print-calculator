@@ -11,7 +11,7 @@
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- Messenger In-App Browser Auto-Bypass -->
+<!-- Messenger In-App Browser Auto-Bypass for admin.html -->
 <script>
   (function () {
     const ua = navigator.userAgent || navigator.vendor || window.opera;
@@ -19,18 +19,18 @@
     const isAndroid = /Android/i.test(ua);
     const isIOS = /iPhone|iPad|iPod/i.test(ua);
 
-    // 1. Automatic breakout for Android users
+    // 1. Automatic breakout to Chrome on Android
     if (isMessenger && isAndroid) {
       const targetUrl = window.location.href.replace(/^https?:\/\//, '');
       window.location.href = 'intent://' + targetUrl + '#Intent;scheme=https;action=android.intent.action.VIEW;end;';
     }
 
-    // 2. Banner alert for iOS users
+    // 2. Banner prompt for iOS Safari breakout
     if (isMessenger && isIOS) {
       document.addEventListener('DOMContentLoaded', function () {
         const banner = document.createElement('div');
         banner.style.cssText = 'background:#0284c7; color:#fff; text-align:center; padding:10px 14px; font-size:13px; font-weight:600; position:sticky; top:0; z-index:9999; box-shadow:0 2px 8px rgba(0,0,0,0.2);';
-        banner.innerHTML = '💡 For original file names & smooth uploads, tap <strong>•••</strong> at the top right and choose <strong>"Open in Safari"</strong>.';
+        banner.innerHTML = '💡 For proper document downloads & admin controls, tap <strong>•••</strong> at the top right and select <strong>"Open in Safari"</strong>.';
         document.body.prepend(banner);
       });
     }
