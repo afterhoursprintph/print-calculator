@@ -313,16 +313,19 @@
       }
 
       orderCard.innerHTML = `
-        <div class="order-header">
-          <div>
-            <h3 class="customer-title">👤 ${order.customer_name || 'Guest'}</h3>
-            <div class="order-time">Received: ${dateStr}</div>
-          </div>
-          <span class="pay-tag ${payClass}">${order.payment_method}</span>
-      <button onclick="openReceiptModal('${order.receipt_url}')" style="background:#0284c7; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.85rem; font-weight:600; margin-left:8px;">
+       <div class="order-header">
+  <div>
+    <!-- Flex wrapper to keep button on the same line as the name -->
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <h3 class="customer-title" style="margin:0;">👤 ${order.customer_name || 'Guest'}</h3>
+      <button onclick="openReceiptModal('${order.receipt_url || order.payment_proof || order.receipt_path || ''}')" style="background:#0284c7; color:#fff; border:none; padding:3px 8px; border-radius:6px; cursor:pointer; font-size:0.75rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;">
         👁️ View Receipt
       </button>
-        </div>
+    </div>
+    <div class="order-time">Received: ${dateStr}</div>
+  </div>
+  <span class="pay-tag ${payClass}">${order.payment_method}</span>
+</div>
 
         <div class="files-list">
           ${filesHTML || '<div style="color: var(--text-muted);">No file details attached.</div>'}
@@ -393,15 +396,18 @@
 
 <script>
     function openReceiptModal(imageUrl) {
-      if (!imageUrl) {
-        alert('No receipt image attached to this order.');
-        return;
-      }
-      const modal = document.getElementById('receiptModal');
-      const img = document.getElementById('receiptImagePreview');
-      img.src = imageUrl;
-      modal.style.display = 'flex';
-    }
+  // Prevent broken image dialog if receipt link is missing or string 'undefined'
+  if (!imageUrl || imageUrl === 'undefined' || imageUrl === 'null' || imageUrl.trim() === '') {
+    alert('No receipt image was uploaded for this order.');
+    return;
+  }
+
+  const modal = document.getElementById('receiptModal');
+  const img = document.getElementById('receiptImagePreview');
+  
+  img.src = imageUrl;
+  modal.style.display = 'flex';
+}
 
     function closeReceiptModal() {
       const modal = document.getElementById('receiptModal');
