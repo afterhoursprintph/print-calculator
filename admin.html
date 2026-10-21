@@ -385,37 +385,82 @@
   setupRealtimeListener();
 </script>
 
-<!-- Receipt Popup Modal -->
+<!-- Digital Receipt Popup Modal -->
 <div id="receiptModal" onclick="closeReceiptModal()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; align-items:center; justify-content:center; padding:16px; box-sizing:border-box;">
-  <div style="position:relative; max-width:90%; max-height:90%; background:#fff; border-radius:12px; padding:16px; display:flex; flex-direction:column; align-items:center;" onclick="event.stopPropagation()">
-    <span onclick="closeReceiptModal()" style="position:absolute; top:6px; right:14px; font-size:28px; font-weight:bold; cursor:pointer; color:#555;">&times;</span>
-    <h3 style="margin:0 0 12px 0; font-size:1.1rem; color:#111;">Payment Receipt</h3>
-    <img id="receiptImagePreview" src="" alt="Receipt Preview" style="max-width:100%; max-height:75vh; object-fit:contain; border-radius:8px; border:1px solid #e5e7eb;">
+  <div style="position:relative; width:100%; max-width:380px; background:#ffffff; color:#0f172a; border-radius:12px; padding:24px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.5); font-family:sans-serif;" onclick="event.stopPropagation()">
+    <span onclick="closeReceiptModal()" style="position:absolute; top:12px; right:16px; font-size:24px; font-weight:bold; cursor:pointer; color:#64748b;">&times;</span>
+    
+    <!-- Receipt Header -->
+    <div style="text-align:center; border-bottom:2px dashed #cbd5e1; padding-bottom:12px; margin-bottom:16px;">
+      <h2 style="margin:0; font-size:1.2rem; color:#0f172a; font-weight:800;">AfterHours Print PH</h2>
+      <p style="margin:2px 0 0; font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Order Summary Receipt</p>
+    </div>
+
+    <!-- Receipt Body Details -->
+    <div id="receiptBody" style="font-size:0.85rem; color:#334155; line-height:1.5;"></div>
+
+    <!-- Footer -->
+    <div style="margin-top:16px; border-top:2px dashed #cbd5e1; padding-top:10px; text-align:center; font-size:0.75rem; color:#94a3b8;">
+      Thank you for printing with AfterHours!
+    </div>
   </div>
 </div>
-
+  
 <script>
-    function openReceiptModal(imageUrl) {
-  // Prevent broken image dialog if receipt link is missing or string 'undefined'
-  if (!imageUrl || imageUrl === 'undefined' || imageUrl === 'null' || imageUrl.trim() === '') {
-    alert('No receipt image was uploaded for this order.');
+    // Open dynamic order receipt by Order ID
+function openOrderReceipt(orderId) {
+  // Find order object from loaded state
+  const order = (typeof allOrders !== 'undefined' ? allOrders : []).find(o => String(o.id) === String(orderId));
+  if (!order) {
+    alert('Order details not found.');
     return;
   }
 
   const modal = document.getElementById('receiptModal');
-  const img = document.getElementById('receiptImagePreview');
-  
-  img.src = imageUrl;
+  const receiptBody = document.getElementById('receiptBody');
+
+  // Build file breakdown list
+  let filesHtml = '';
+  if (Array.isArray(order.files_data) && order.files_data.length > 0) {
+    order.files_data.forEach(f => {
+      filesHtml += `
+        <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.8rem;">
+          <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px;">📄 ${f.fileName || 'Document'}</span>
+          <span style="font-weight:600; color:#0f172a;">${f.copies || 1}x (${f.paperSize || 'A4'})</span>
+        </div>`;
+    });
+  } else {
+    filesHtml = '<div style="color:#94a3b8; font-size:0.8rem;">Standard Print Job</div>';
+  }
+
+  const formattedDate = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
+
+  // Inject receipt markup
+  receiptBody.innerHTML = `
+    <div style="margin-bottom:12px; font-size:0.8rem;">
+      <div style="margin-bottom:2px;"><strong>Customer:</strong> ${order.customer_name || 'Guest'}</div>
+      <div style="margin-bottom:2px;"><strong>Date:</strong> ${formattedDate}</div>
+      <div><strong>Payment:</strong> ${order.payment_method || 'GCash/MariBank'}</div>
+    </div>
+
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; margin:12px 0;">
+      <div style="font-weight:700; margin-bottom:8px; color:#475569; font-size:0.7rem; text-transform:uppercase;">Print Items</div>
+      ${filesHtml}
+    </div>
+
+    <div style="display:flex; justify-content:space-between; font-size:1.05rem; font-weight:800; margin-top:14px; color:#0f172a; border-top:1px solid #e2e8f0; padding-top:8px;">
+      <span>Total Paid:</span>
+      <span style="color:#16a34a;">₱${order.total_amount || 0}</span>
+    </div>
+  `;
+
   modal.style.display = 'flex';
 }
 
-    function closeReceiptModal() {
-      const modal = document.getElementById('receiptModal');
-      const img = document.getElementById('receiptImagePreview');
-      modal.style.display = 'none';
-      img.src = '';
-    }
-  </script>
+function closeReceiptModal() {
+  document.getElementById('receiptModal').style.display = 'none';
+}
+
   
 </body>
 </html>
