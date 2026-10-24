@@ -166,23 +166,23 @@
   </div>
 </div>
 
-<!-- Digital Receipt Popup Modal -->
-<div id="receiptModal" onclick="closeReceiptModal()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; align-items:center; justify-content:center; padding:16px; box-sizing:border-box;">
-  <div style="position:relative; width:100%; max-width:380px; background:#ffffff; color:#0f172a; border-radius:12px; padding:24px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.5); font-family:sans-serif;" onclick="event.stopPropagation()">
-    <span onclick="closeReceiptModal()" style="position:absolute; top:12px; right:16px; font-size:24px; font-weight:bold; cursor:pointer; color:#64748b;">&times;</span>
+<!-- Dark-Themed Receipt Popup Modal (Matches index.html) -->
+<div id="receiptModal" onclick="closeReceiptModal()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.9); z-index:10000; align-items:center; justify-content:center; padding:16px; box-sizing:border-box;">
+  <div style="position:relative; width:100%; max-width:420px; background:#1e293b; color:#f8fafc; border:1.5px solid #334155; border-radius:16px; padding:24px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.6); font-family:'Segoe UI', system-ui, -apple-system, sans-serif;" onclick="event.stopPropagation()">
+    <span onclick="closeReceiptModal()" style="position:absolute; top:14px; right:18px; font-size:24px; font-weight:bold; cursor:pointer; color:#94a3b8;">&times;</span>
     
     <!-- Receipt Header -->
-    <div style="text-align:center; border-bottom:2px dashed #cbd5e1; padding-bottom:12px; margin-bottom:16px;">
-      <h2 style="margin:0; font-size:1.2rem; color:#0f172a; font-weight:800;">AfterHours Print PH</h2>
-      <p style="margin:2px 0 0; font-size:0.75rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Order Summary Receipt</p>
+    <div style="text-align:center; border-bottom:2px dashed #334155; padding-bottom:14px; margin-bottom:16px;">
+      <h2 style="margin:0; font-size:1.35rem; color:#fff; font-weight:800;">AfterHours <span style="color:#38bdf8;">Print PH</span></h2>
+      <p style="margin:4px 0 0; font-size:0.75rem; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:1px;">Official Order Receipt</p>
     </div>
 
-    <!-- Receipt Body Details -->
-    <div id="receiptBody" style="font-size:0.85rem; color:#334155; line-height:1.5;"></div>
+    <!-- Receipt Content -->
+    <div id="receiptBody"></div>
 
     <!-- Footer -->
-    <div style="margin-top:16px; border-top:2px dashed #cbd5e1; padding-top:10px; text-align:center; font-size:0.75rem; color:#94a3b8;">
-      Thank you for printing with AfterHours!
+    <div style="margin-top:16px; border-top:2px dashed #334155; padding-top:12px; text-align:center; font-size:0.75rem; color:#94a3b8;">
+      🖨️ Thank you for printing with AfterHours!
     </div>
   </div>
 </div>
@@ -415,44 +415,79 @@
     const receiptBody = document.getElementById('receiptBody');
 
     let filesHtml = '';
+    let grandTotalPages = 0;
+
     if (Array.isArray(order.files_data) && order.files_data.length > 0) {
       order.files_data.forEach(f => {
         const docName = f.name || f.fileName || 'Document';
-        let paperInfo = 'A4';
+        let specsTag = '';
+        
         if (Array.isArray(f.print_details) && f.print_details.length > 0) {
-          const papers = [...new Set(f.print_details.map(d => d.paper))];
-          paperInfo = papers.join(', ');
-        } else if (f.paperSize) {
-          paperInfo = f.paperSize;
+          const papers = [...new Set(f.print_details.map(d => d.paper))].join(', ');
+          const hasColor = f.print_details.some(d => d.category !== 'Black & White');
+          const pageCount = f.print_details.reduce((sum, d) => sum + (d.pages ? d.pages.length : 0), 0);
+          
+          grandTotalPages += (pageCount * (f.copies || 1));
+          
+          specsTag = `
+            <div style="display:flex; gap:6px; align-items:center; margin-top:4px; font-size:0.75rem;">
+              <span style="background:#000; color:#38bdf8; padding:1px 5px; border-radius:3px; font-family:monospace; border:1px solid #38bdf8;">${papers}</span>
+              <span style="color:${hasColor ? '#38bdf8' : '#cbd5e1'}; font-weight:bold;">${hasColor ? '🌈 Color' : '📄 B&W'}</span>
+              <span style="color:#94a3b8;">(${pageCount} pgs)</span>
+            </div>`;
+        } else {
+          specsTag = `<div style="color:#94a3b8; font-size:0.75rem; margin-top:2px;">Standard Print Job</div>`;
         }
 
         filesHtml += `
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:0.8rem;">
-            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px;" title="${docName}">📄 ${docName}</span>
-            <span style="font-weight:600; color:#0f172a;">${f.copies || 1}x (${paperInfo})</span>
+          <div style="background:#0f172a; border:1px solid #334155; border-radius:8px; padding:10px; margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-weight:700; color:#fff; font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:210px;" title="${docName}">📄 ${docName}</span>
+              <span style="background:rgba(255,255,255,0.1); color:#fff; padding:2px 6px; border-radius:4px; font-size:0.75rem; font-weight:bold;">${f.copies || 1} Copies</span>
+            </div>
+            ${specsTag}
           </div>`;
       });
     } else {
-      filesHtml = '<div style="color:#94a3b8; font-size:0.8rem;">Standard Print Job</div>';
+      filesHtml = '<div style="color:#94a3b8; font-size:0.8rem; text-align:center;">No document details attached.</div>';
     }
 
     const formattedDate = order.created_at ? new Date(order.created_at).toLocaleString() : 'N/A';
+    const isCash = order.payment_method === 'Cash';
+    const payTag = isCash 
+      ? '<span style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid #f59e0b; padding:2px 8px; border-radius:6px; font-size:0.75rem; font-weight:bold;">Cash on Pickup</span>'
+      : '<span style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid #38bdf8; padding:2px 8px; border-radius:6px; font-size:0.75rem; font-weight:bold;">MariBank / GCash QR</span>';
 
     receiptBody.innerHTML = `
-      <div style="margin-bottom:12px; font-size:0.8rem;">
-        <div style="margin-bottom:2px;"><strong>Customer:</strong> ${order.customer_name || 'Guest'}</div>
-        <div style="margin-bottom:2px;"><strong>Date:</strong> ${formattedDate}</div>
-        <div><strong>Payment:</strong> ${order.payment_method || 'GCash/MariBank'}</div>
+      <!-- Customer Info & Payment Header -->
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; background:#0f172a; padding:12px; border-radius:8px; border:1px solid #334155;">
+        <div>
+          <div style="font-size:0.7rem; color:#94a3b8; text-transform:uppercase; font-weight:700; letter-spacing:0.5px;">Customer Name</div>
+          <div style="font-size:0.95rem; font-weight:800; color:#fff; margin-top:2px;">👤 ${order.customer_name || 'Guest'}</div>
+          <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">${formattedDate}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:0.7rem; color:#94a3b8; text-transform:uppercase; font-weight:700; letter-spacing:0.5px; margin-bottom:4px;">Payment Method</div>
+          ${payTag}
+        </div>
       </div>
 
-      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; margin:12px 0;">
-        <div style="font-weight:700; margin-bottom:8px; color:#475569; font-size:0.7rem; text-transform:uppercase;">Print Items</div>
+      <!-- Print Job Items Breakdown -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:0.7rem; color:#94a3b8; text-transform:uppercase; font-weight:700; letter-spacing:0.5px; margin-bottom:8px;">Print Job Details</div>
         ${filesHtml}
       </div>
 
-      <div style="display:flex; justify-content:space-between; font-size:1.05rem; font-weight:800; margin-top:14px; color:#0f172a; border-top:1px solid #e2e8f0; padding-top:8px;">
-        <span>Total Paid:</span>
-        <span style="color:#16a34a;">₱${order.total_amount || 0}</span>
+      <!-- Summary Footer -->
+      <div style="background:#0f172a; border:1px solid #334155; border-radius:10px; padding:12px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:0.7rem; color:#94a3b8; text-transform:uppercase; font-weight:700; letter-spacing:0.5px;">Total Pages</div>
+          <div style="font-size:1rem; font-weight:800; color:#fff;">${grandTotalPages} Pages</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:0.7rem; color:#94a3b8; text-transform:uppercase; font-weight:700; letter-spacing:0.5px;">Total Amount</div>
+          <div style="font-size:1.35rem; font-weight:900; color:#22c55e;">₱${order.total_amount || 0}</div>
+        </div>
       </div>
     `;
 
@@ -463,7 +498,7 @@
     document.getElementById('receiptModal').style.display = 'none';
   };
 
-  // Run initializations
+  // Initializations
   fetchOrders();
   setupRealtimeListener();
 </script>
